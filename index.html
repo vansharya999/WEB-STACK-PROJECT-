@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Car Resale Value Finder</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <span class="logo">🚗</span>
+      <div>
+        <h1>Car Resale Value Finder</h1>
+        <p class="tagline">Get an instant AI-powered price estimate for your used car</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2 class="card-title">Enter Car Details</h2>
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="make_year">Make Year</label>
+          <input type="number" id="make_year" placeholder="e.g. 2018" min="1990" max="2025" />
+        </div>
+
+        <div class="form-group">
+          <label for="brand">Brand</label>
+          <select id="brand">
+            <option value="">-- Select Brand --</option>
+            <option>BMW</option>
+            <option>Chevrolet</option>
+            <option>Ford</option>
+            <option>Honda</option>
+            <option>Hyundai</option>
+            <option>Kia</option>
+            <option>Nissan</option>
+            <option>Tesla</option>
+            <option>Toyota</option>
+            <option>Volkswagen</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="fuel_type">Fuel Type</label>
+          <select id="fuel_type">
+            <option value="">-- Select Fuel --</option>
+            <option>Petrol</option>
+            <option>Diesel</option>
+            <option>Electric</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="transmission">Transmission</label>
+          <select id="transmission">
+            <option value="">-- Select --</option>
+            <option>Manual</option>
+            <option>Automatic</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="engine_cc">Engine CC</label>
+          <input type="number" id="engine_cc" placeholder="e.g. 1500" min="500" max="6000" />
+        </div>
+
+        <div class="form-group">
+          <label for="mileage_kmpl">Mileage (kmpl)</label>
+          <input type="number" id="mileage_kmpl" placeholder="e.g. 18.5" step="0.01" min="1" max="50" />
+        </div>
+
+        <div class="form-group">
+          <label for="owner_count">Number of Previous Owners</label>
+          <input type="number" id="owner_count" placeholder="e.g. 2" min="1" max="10" />
+        </div>
+
+        <div class="form-group">
+          <label for="accidents_reported">Accidents Reported</label>
+          <input type="number" id="accidents_reported" placeholder="e.g. 0" min="0" max="10" />
+        </div>
+
+        <div class="form-group">
+          <label for="color">Color</label>
+          <select id="color">
+            <option value="">-- Select Color --</option>
+            <option>Black</option>
+            <option>Blue</option>
+            <option>Gray</option>
+            <option>Red</option>
+            <option>Silver</option>
+            <option>White</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="service_history">Service History</label>
+          <select id="service_history">
+            <option value="">-- Select --</option>
+            <option>Full</option>
+            <option>Partial</option>
+            <option>None</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="insurance_valid">Insurance Valid?</label>
+          <select id="insurance_valid">
+            <option value="">-- Select --</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+        </div>
+
+      </div>
+
+      <button class="predict-btn" onclick="predict()">Predict Resale Value</button>
+      <div id="result-box" class="result-box" style="display:none">
+        <div class="result-label">Estimated Resale Value</div>
+        <div id="result-price" class="result-price">—</div>
+        <div class="result-note">* This is an AI-based estimate. Actual prices may vary.</div>
+      </div>
+
+      <div id="error-box" class="error-box" style="display:none">
+        <span id="error-msg"></span>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <p>Car Resale Value Finder &mdash; Powered by Random Forest AI</p>
+  </footer>
+  <script>
+    function predict() {
+
+      // Read input values from form
+      var data = {
+        make_year:          document.getElementById("make_year").value,
+        brand:              document.getElementById("brand").value,
+        fuel_type:          document.getElementById("fuel_type").value,
+        transmission:       document.getElementById("transmission").value,
+        engine_cc:          document.getElementById("engine_cc").value,
+        mileage_kmpl:       document.getElementById("mileage_kmpl").value,
+        owner_count:        document.getElementById("owner_count").value,
+        accidents_reported: document.getElementById("accidents_reported").value,
+        color:              document.getElementById("color").value,
+        service_history:    document.getElementById("service_history").value,
+        insurance_valid:    document.getElementById("insurance_valid").value
+      };
+
+      //check that nothing is empty
+      for (var key in data) {
+        if (data[key] == "") {
+          alert("Please fill in: " + key.replace(/_/g, " "));
+          return;
+        }
+      }
+
+      //data to Flask 
+      fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(result) {
+        // Show the pred
+        if (result.success) {
+          document.getElementById("result-price").textContent = "$ " + result.predicted_price;
+          document.getElementById("result-box").style.display = "block";
+          document.getElementById("error-box").style.display = "none";
+        } else {
+          alert("Error: " + result.error);
+        }
+      })
+      .catch(function(error) {
+        alert("Could not connect to server. Is Flask running?");
+      });
+
+    }
+  </script>
+</body>
+</html>
